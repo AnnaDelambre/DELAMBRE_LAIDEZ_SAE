@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>DIM_DATE</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description/>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>-</created_user>
+    <created_date>2026/05/10 13:37:28.909</created_date>
+    <modified_user>-</modified_user>
+    <modified_date>2026/05/10 13:37:28.909</modified_date>
+  </info>
+  <notepads>
+  </notepads>
+  <order>
+    <hop>
+      <from>Table input</from>
+      <to>insertion DIM_DATE</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>Table input</name>
+    <type>TableInput</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>MUTATIONS_SOURCE</connection>
+    <execute_each_row>N</execute_each_row>
+    <limit>0</limit>
+    <sql>SELECT DISTINCT
+    date_mutation AS id_date,
+    EXTRACT(YEAR FROM date_mutation) AS annee,
+    TO_NUMBER(TO_CHAR(date_mutation, 'Q')) AS trimestre,
+    EXTRACT(MONTH FROM date_mutation) AS mois,
+    TO_CHAR(date_mutation, 'MONTH', 'NLS_DATE_LANGUAGE=FRENCH') AS nom_mois,
+    EXTRACT(DAY FROM date_mutation) AS jour,
+    TO_CHAR(date_mutation, 'DAY', 'NLS_DATE_LANGUAGE=FRENCH') AS nom_jour
+
+FROM Mutation
+WHERE date_mutation IS NOT NULL</sql>
+    <variables_active>N</variables_active>
+    <attributes/>
+    <GUI>
+      <xloc>208</xloc>
+      <yloc>368</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>insertion DIM_DATE</name>
+    <type>InsertUpdate</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <commit>1</commit>
+    <connection>MUTATIONS_CIBLE</connection>
+    <lookup>
+      <key>
+        <condition>=</condition>
+        <field>ID_DATE</field>
+        <name>ID_DATE</name>
+        <name2/>
+      </key>
+      <schema>C##ETUDIANT2</schema>
+      <table>DIM_DATE</table>
+      <value>
+        <name>ID_DATE</name>
+        <rename>ID_DATE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>ANNEE</name>
+        <rename>ANNEE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>TRIMESTRE</name>
+        <rename>TRIMESTRE</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>MOIS</name>
+        <rename>MOIS</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>NOM_MOIS</name>
+        <rename>NOM_MOIS</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>JOUR</name>
+        <rename>JOUR</rename>
+        <update>Y</update>
+      </value>
+      <value>
+        <name>NOM_JOUR</name>
+        <rename>NOM_JOUR</rename>
+        <update>Y</update>
+      </value>
+    </lookup>
+    <update_bypassed>N</update_bypassed>
+    <attributes/>
+    <GUI>
+      <xloc>544</xloc>
+      <yloc>368</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>

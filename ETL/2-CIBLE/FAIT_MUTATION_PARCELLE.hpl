@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pipeline>
+  <info>
+    <name>FAIT_MUTATION_PARCELLE</name>
+    <name_sync_with_filename>Y</name_sync_with_filename>
+    <description/>
+    <extended_description/>
+    <pipeline_version/>
+    <pipeline_type>Normal</pipeline_type>
+    <parameters>
+    </parameters>
+    <capture_transform_performance>N</capture_transform_performance>
+    <transform_performance_capturing_delay>1000</transform_performance_capturing_delay>
+    <transform_performance_capturing_size_limit>100</transform_performance_capturing_size_limit>
+    <created_user>-</created_user>
+    <created_date>2026/05/10 13:50:48.805</created_date>
+    <modified_user>-</modified_user>
+    <modified_date>2026/05/10 13:50:48.805</modified_date>
+  </info>
+  <notepads>
+  </notepads>
+  <order>
+    <hop>
+      <from>Table input</from>
+      <to>Oracle bulk loader</to>
+      <enabled>Y</enabled>
+    </hop>
+  </order>
+  <transform>
+    <name>Oracle bulk loader</name>
+    <type>OraBulkLoader</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <bad_file>C:\sqlldr\load.bad</bad_file>
+    <bind_size>0</bind_size>
+    <commit>100000</commit>
+    <connection>MUTATIONS_CIBLE</connection>
+    <control_file>C:\sqlldr\control0.cfg</control_file>
+    <data_file>C:\sqlldr\data.csv</data_file>
+    <direct_path>N</direct_path>
+    <discard_file>C:\sqlldr\load.dsc</discard_file>
+    <erase_files>Y</erase_files>
+    <errors>50</errors>
+    <fail_on_error>Y</fail_on_error>
+    <fail_on_warning>N</fail_on_warning>
+    <load_action>APPEND</load_action>
+    <load_method>AUTO_END</load_method>
+    <log_file>C:\sqlldr\load.log</log_file>
+    <mapping>
+      <date_mask/>
+      <field_name>VALEUR_FONCIERE</field_name>
+      <stream_name>VALEUR_FONCIERE</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>SURFACE_REELLE_BATI</field_name>
+      <stream_name>SURFACE_REELLE_BATI</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>NOMBRE_PIECES_PRINCIPALES</field_name>
+      <stream_name>NOMBRE_PIECES_PRINCIPALES</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>SURFACE_TERRAIN</field_name>
+      <stream_name>SURFACE_TERRAIN</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>NOMBRE_LOTS</field_name>
+      <stream_name>NOMBRE_LOTS</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_TYPE_LOCAL</field_name>
+      <stream_name>ID_TYPE_LOCAL</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_MUTATION</field_name>
+      <stream_name>ID_MUTATION</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_NATURE</field_name>
+      <stream_name>ID_NATURE</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_LOCALISATION</field_name>
+      <stream_name>ID_LOCALISATION</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_PARCELLE</field_name>
+      <stream_name>ID_PARCELLE</stream_name>
+    </mapping>
+    <mapping>
+      <date_mask/>
+      <field_name>ID_DATE</field_name>
+      <stream_name>ID_DATE</stream_name>
+    </mapping>
+    <parallel>N</parallel>
+    <read_size>0</read_size>
+    <shema>C##ETUDIANT2</shema>
+    <sqlldr>C:\oracle\21c\dbhomeXE\bin\sqlldr.exe</sqlldr>
+    <table>FAIT_MUTATION_PARCELLE</table>
+    <attributes/>
+    <GUI>
+      <xloc>752</xloc>
+      <yloc>464</yloc>
+    </GUI>
+  </transform>
+  <transform>
+    <name>Table input</name>
+    <type>TableInput</type>
+    <description/>
+    <distribute>Y</distribute>
+    <custom_distribution/>
+    <copies>1</copies>
+    <partitioning>
+      <method>none</method>
+      <schema_name/>
+    </partitioning>
+    <connection>MUTATIONS_SOURCE</connection>
+    <execute_each_row>N</execute_each_row>
+    <limit>0</limit>
+    <sql>WITH ncp_clean AS (
+    SELECT
+        id_parcelle,
+        id_mutation,
+        id_nature,
+        MAX(surface_terrain) AS surface_terrain
+    FROM NatureCultureParcelle
+    GROUP BY id_parcelle, id_mutation, id_nature
+),
+tp_clean AS (
+    SELECT
+        id_parcelle,
+        id_mutation,
+        code_type_local AS id_type_local
+    FROM TypeParcelle
+    GROUP BY id_parcelle, id_mutation, code_type_local
+)
+
+SELECT
+    p.id_parcelle,
+    p.id_mutation,
+
+    /* ✅ sécurisation nombre (très important pour ton ORA-01722) */
+    CASE 
+        WHEN REGEXP_LIKE(m.valeur_fonciere, '^[0-9]+([.,][0-9]+)?$')
+        THEN TO_NUMBER(REPLACE(m.valeur_fonciere, ',', '.'))
+        ELSE NULL
+    END AS valeur_fonciere,
+
+    /* ✅ dimensions avec UNKNOWN */
+    NVL(ncp.id_nature, 'UNKNOWN') AS id_nature,
+    NVL(ncp.surface_terrain, -1) AS surface_terrain,
+
+    NVL(tp.id_type_local, -1) AS id_type_local,
+
+    NVL(p.surface_reelle_bati, -1) AS surface_reelle_bati,
+    NVL(p.nombre_pieces_principales, -1) AS nombre_pieces_principales,
+    NVL(p.nombre_lots, -1) AS nombre_lots,
+
+    NVL(m.date_mutation, DATE '0001-01-01') AS id_date,
+
+    NVL(c.CODE_DEPARTEMENT || c.NOM_COMMUNE, 'UNKNOWN') AS id_localisation
+
+FROM Parcelle p
+
+LEFT JOIN Mutation m
+    ON p.id_mutation = m.id_mutation
+
+LEFT JOIN ncp_clean ncp
+    ON p.id_parcelle = ncp.id_parcelle
+    AND p.id_mutation = ncp.id_mutation
+
+LEFT JOIN tp_clean tp
+    ON p.id_parcelle = tp.id_parcelle
+    AND p.id_mutation = tp.id_mutation
+
+LEFT JOIN Adresse a
+    ON p.id_adresse = a.id_adresse
+
+LEFT JOIN Commune c
+    ON a.code_commune = c.code_commune</sql>
+    <variables_active>N</variables_active>
+    <attributes/>
+    <GUI>
+      <xloc>336</xloc>
+      <yloc>464</yloc>
+    </GUI>
+  </transform>
+  <transform_error_handling>
+  </transform_error_handling>
+  <attributes/>
+</pipeline>
